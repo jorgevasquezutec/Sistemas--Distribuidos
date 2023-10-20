@@ -1,0 +1,53 @@
+version: '3'
+services:
+  api_gateway:
+    hostname: api_gateway
+    image: nginx_gateway_image:latest
+    build: 
+      context: ./nginx/
+      dockerfile: Dockerfile
+    container_name: api_gateway
+    ports:
+      - protocol: tcp
+        target: 80
+        published: 8881
+    environment:
+      NGINX_PORT: 80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - api-network
+    depends_on:
+      - pod1
+      - pod2
+  pod1:
+    hostname: pod1
+    container_name: pod1
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: pod1
+    volumes:
+      - ./pod1:/app
+    networks:
+      - api-network
+    env_file:
+      - ./api/.env
+
+  pod2:
+    hostname: pod2
+    container_name: pod2
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: pod2
+    volumes:
+      - ./pod2:/app
+    networks:
+      - api-network
+    env_file:
+      - ./api/.env
+
+networks:
+  api-network:
+    driver: bridge
