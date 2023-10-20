@@ -18,13 +18,10 @@ async def get_anime_info(title: str):
     async with httpx.AsyncClient() as client:
         # Make a GET request to the Jikan API to search for the anime by title https://api.jikan.moe/v4/anime?q=naruto&sfw
         response = await client.get(f"{JIKAN_API_URL}?q={title}&sfw")
-        print(response.status_code)
+        print(f"{JIKAN_API_URL}?q={title}&sfw")
         if response.status_code == 200:
             anime_data = response.json()
-            if "results" in anime_data:
-                # Return the first result
-                if len(anime_data["results"]) > 0:
-                    return anime_data["results"][0]
+            return anime_data
     return {"error": "Anime not found"}
 
 def run():
