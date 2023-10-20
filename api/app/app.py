@@ -3,10 +3,15 @@ import httpx
 import uvicorn
 from app.config.settings import api_settings
 
-app = FastAPI()
+app = FastAPI(
+    title=api_settings.TITLE,
+    openapi_url=f'{api_settings.PREFIX}/openapi.json',
+    docs_url=f'{api_settings.PREFIX}/docs',
+)
 
 # Jikan API base URL
-JIKAN_API_URL = 
+JIKAN_API_URL =  api_settings.JIKAN_API_URL
+app.router.prefix = api_settings.PREFIX
 
 @app.get("/anime")
 async def get_anime_info(title: str):
@@ -22,7 +27,8 @@ async def get_anime_info(title: str):
                     return anime_data["results"][0]
     return {"error": "Anime not found"}
 
-if __name__ == "__main__":
-
-    # Run the FastAPI application
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+def run():
+    uvicorn.run(app,
+                host=api_settings.HOST,
+                port=api_settings.PORT,
+                )

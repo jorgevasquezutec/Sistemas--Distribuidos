@@ -7,7 +7,8 @@ class Settings(BaseSettings):
     HOST: str
     PORT: int
     TITLE: str
-    POKE_API_URL: str
+    JIKAN_API_URL: str
+    PREFIX: str
 
 
 

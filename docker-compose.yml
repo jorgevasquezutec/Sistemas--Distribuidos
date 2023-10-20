@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     image: pod1
     volumes:
-      - ./pod1:/app
+      - ./api:/app
     networks:
       - api-network
     env_file:
@@ -42,7 +42,7 @@ services:
       dockerfile: Dockerfile
     image: pod2
     volumes:
-      - ./pod2:/app
+      - ./api:/app
     networks:
       - api-network
     env_file:
