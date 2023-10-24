@@ -48,6 +48,20 @@ services:
     env_file:
       - ./api/.env
 
+  pod3:
+    hostname: pod3
+    container_name: pod3
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: pod3
+    volumes:
+      - ./api:/app
+    networks:
+      - api-network
+    env_file:
+      - ./api/.env
+
   redis-cache:
     image: redis:alpine
     hostname: redis-cache
