@@ -1,5 +1,10 @@
 fastapi
 pydantic
-uvicorn
+uvicorn[standard]
 httpx
 pydantic_settings
+libsql-client
+ipykernel
+sqlalchemy
+aioredis
+redis

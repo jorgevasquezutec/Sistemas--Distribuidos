@@ -1,7 +1,40 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Depends,HTTPException
 import httpx
 import uvicorn
-from app.config.settings import api_settings
+from .config.settings import api_settings
+from sqlalchemy.orm import Session
+from . import models, schemas,crud
+from .database import SessionLocal, engine
+from app.redis import get_redis
+import json
+from fastapi import BackgroundTasks
+
+models.Base.metadata.create_all(bind=engine)
+
+EX_CACHE = 60
+
+redis = get_redis()
+
+
+async def set_cache(data, key):
+    await redis.set(
+        key,
+        json.dumps(data),
+        ex=EX_CACHE,
+    )
+
+async def get_cache(key):
+    data = await redis.get(key)
+    if data:
+        return json.loads(data)
+    return None
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 app = FastAPI(
     title=api_settings.TITLE,
@@ -13,6 +46,10 @@ app = FastAPI(
 JIKAN_API_URL =  api_settings.JIKAN_API_URL
 app.router.prefix = api_settings.PREFIX
 
+@app.get("/")
+async def root():
+    return {"message": "API is running"}
+
 @app.get("/anime")
 async def get_anime_info(title: str):
     async with httpx.AsyncClient() as client:
@@ -23,6 +60,25 @@ async def get_anime_info(title: str):
             anime_data = response.json()
             return anime_data
     return {"error": "Anime not found"}
+
+
+@app.get("/list")
+async def get_anime_list(background_tasks: BackgroundTasks,title: str , page: int = 1, size: int = 10, db: Session = Depends(get_db)):
+    try:
+        key = f'{title}_{page}_{size}'
+        data = await get_cache(key)
+        if not data:
+            print('cache miss')
+            animes = crud.get_animes_per_page(db, title, page=page, size=size)
+            # print(animes)
+            background_tasks.add_task(set_cache, schemas.serialize_response(animes), key)
+            return animes
+        print('cache hit')
+        return data
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 def run():
     uvicorn.run(app,
