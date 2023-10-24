@@ -8,3 +8,4 @@ ipykernel
 sqlalchemy
 aioredis
 redis
+sqlalchemy-libsql
