@@ -18,3 +18,12 @@ def get_animes_per_page(db: Session, title: str = None, page: int = 1, size: int
         "pages": total // size + 1 if total % size > 0 else total // size,
         "size": size
     }
+
+def get_anime(db:Session, title: str):
+    # anime equal
+    query = db.query(models.Anime).filter(models.Anime.title == title)
+    if not query.count():
+        return None
+    return query.first()
+
+    # query = db.query(models.Anime).filter(models.Anime.title.ilike(f'%{title}%'))

@@ -66,7 +66,9 @@ async def get_anime_info(title: str):
 @app.get("/anime")
 def implement_circuit_breaker(title: str):
     try:
-        data = get_anime_info(title)
+        data = crud.get_anime(title)
+        if(data is None):
+            data = get_anime_info(title)
         return {
             "status_code": 200,
             "success": True,
@@ -88,22 +90,22 @@ def implement_circuit_breaker(title: str):
 
 
 
-@app.get("/list")
-async def get_anime_list(background_tasks: BackgroundTasks,title: str , page: int = 1, size: int = 10, db: Session = Depends(get_db)):
-    try:
-        key = f'{title}_{page}_{size}'
-        data = await get_cache(key)
-        if not data:
-            print('cache miss')
-            animes = crud.get_animes_per_page(db, title, page=page, size=size)
-            # print(animes)
-            background_tasks.add_task(set_cache, schemas.serialize_response(animes), key)
-            return animes
-        print('cache hit')
-        return data
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.get("/list")
+# async def get_anime_list(background_tasks: BackgroundTasks,title: str , page: int = 1, size: int = 10, db: Session = Depends(get_db)):
+#     try:
+#         key = f'{title}_{page}_{size}'
+#         data = await get_cache(key)
+#         if not data:
+#             print('cache miss')
+#             animes = crud.get_animes_per_page(db, title, page=page, size=size)
+#             # print(animes)
+#             background_tasks.add_task(set_cache, schemas.serialize_response(animes), key)
+#             return animes
+#         print('cache hit')
+#         return data
+#     except Exception as e:
+#         print(e)
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 def run():
