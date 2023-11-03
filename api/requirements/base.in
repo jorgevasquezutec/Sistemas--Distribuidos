@@ -9,3 +9,5 @@ sqlalchemy
 aioredis
 redis
 sqlalchemy-libsql
+circuitbreaker
+requests

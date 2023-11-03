@@ -8,6 +8,7 @@ from .database import SessionLocal, engine
 from app.redis import get_redis
 import json
 from fastapi import BackgroundTasks
+import circuit as circuit
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -50,7 +51,8 @@ app.router.prefix = api_settings.PREFIX
 async def root():
     return {"message": "API is running"}
 
-@app.get("/anime")
+
+@circuit.MyCircuitBreaker()
 async def get_anime_info(title: str):
     async with httpx.AsyncClient() as client:
         # Make a GET request to the Jikan API to search for the anime by title https://api.jikan.moe/v4/anime?q=naruto&sfw
@@ -60,6 +62,30 @@ async def get_anime_info(title: str):
             anime_data = response.json()
             return anime_data
     return {"error": "Anime not found"}
+
+@app.get("/anime")
+def implement_circuit_breaker(title: str):
+    try:
+        data = get_anime_info(title)
+        return {
+            "status_code": 200,
+            "success": True,
+            "message": "Success get starwars data", 
+            "data": data
+        }
+    except circuit.circuitbreaker.CircuitBreakerError as e:
+        return {
+        "status_code": 503,
+        "success": False,
+        "message": f"Circuit breaker active: {e}"
+        }
+    except circuit.requests.exceptions.ConnectionError as e:
+        return {
+        "status_code": 500,
+        "success": False,
+        "message": f"Failed get starwars data: {e}"
+        }
+
 
 
 @app.get("/list")
