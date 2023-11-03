@@ -10,6 +10,9 @@ import json
 # from fastapi import BackgroundTasks
 import circuitbreaker
 import requests
+from app.config.celery_utils import create_celery,get_task_info
+from celery import shared_task
+from fastapi.responses import JSONResponse
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -49,17 +52,37 @@ app = FastAPI(
     docs_url=f'{api_settings.PREFIX}/docs',
 )
 
+app.celery_app = create_celery()
+
+celery = app.celery_app
+
 # Jikan API base URL
 JIKAN_API_URL =  api_settings.JIKAN_API_URL
 app.router.prefix = api_settings.PREFIX
+
+
+@shared_task(bind=True,autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 5},
+             name='celery:insert_anime_task')
+def insert_anime_task(self,anime : schemas.Anime):
+    with SessionLocal() as db:
+        crud.add_anime(db,anime)
+        return {"status": "success"}
+
+
 
 @app.get("/")
 async def root():
     return {"message": "API is running"}
 
+def get_anime_info(title: str):
+    response = requests.get(f"{JIKAN_API_URL}?q={title}&sfw")
+    if response.status_code == 200:
+        return response.json()
+    return {"error": "Anime not found"}
+
 
 @MyCircuitBreaker()
-def get_anime_info(title: str):
+def get_anime_info_cc(title: str):
     response = requests.get(f"{JIKAN_API_URL}?q={title}&sfw")
     if response.status_code == 200:
         return response.json()
@@ -73,13 +96,33 @@ def get_anime_info(title: str):
     #         return anime_data
     # return {"error": "Anime not found"}
 
+@celery.task
+def error_handler(request, exc, traceback):
+    print('Task {0} raised exception: {1!r}\n{2!r}'.format(
+          request.id, exc, traceback))
+
+
+@app.get("/task/{task_id}")
+async def get_task_status(task_id: str)-> dict:
+    return get_task_info(task_id)
+
+
+@app.get("/anime-test")
+async def anime_test():
+    anime = schemas.Anime(id=2,title="Naruto",url="https://api.jikan.moe/v4/anime/20")
+    # with SessionLocal() as db:
+    #     crud.add_anime(db,anime)
+    task = insert_anime_task.apply_async(args=[anime],link_error=error_handler.s())
+    return JSONResponse({"task_id": task.id})
+
+
 @app.get("/anime")
 def implement_circuit_breaker(title: str,db: Session = Depends(get_db)):
     try:
         data = crud.get_anime(db,title)
         if(data is None):
-            data = get_anime_info(title)
-        print(data)
+            data = get_anime_info_cc(title)
+        # print(data)
         return {
             "status_code": 200,
             "success": True,

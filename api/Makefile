@@ -14,3 +14,5 @@ run:
 watch:
 	uvicorn app.app:app --reload
 	
+celery:
+	celery -A app.app.celery worker --loglevel=info -Q celery

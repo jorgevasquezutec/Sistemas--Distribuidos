@@ -1,89 +1,101 @@
 version: '3'
 services:
-  api_gateway:
-    hostname: api_gateway
-    image: nginx_gateway_image:latest
-    build: 
-      context: ./nginx/
-      dockerfile: Dockerfile
-    container_name: api_gateway-sd
-    ports:
-      - protocol: tcp
-        target: 80
-        published: 8881
-    environment:
-      NGINX_PORT: 80
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    networks:
-      - api-network
-    depends_on:
-      - pod1
-      - pod2
-  pod1:
-    hostname: pod1
-    container_name: pod1
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    image: pod1
-    volumes:
-      - ./api:/app
-    networks:
-      - api-network
-    env_file:
-      - ./api/.env
+  rabbitmq:
+      image: rabbitmq:3-management-alpine
+      container_name: "rabbitmq"
+      ports:
+        - 5672:5672
+        - 15672:15672
+      volumes:
+        - ./rabbitmq/data/:/var/lib/rabbitmq/
+        - ./rabbitmq/log/:/var/log/rabbitmq
+      networks:
+        - api-network
+      # restart: unless-stopped
+  # api_gateway:
+  #   hostname: api_gateway
+  #   image: nginx_gateway_image:latest
+  #   build: 
+  #     context: ./nginx/
+  #     dockerfile: Dockerfile
+  #   container_name: api_gateway-sd
+  #   ports:
+  #     - protocol: tcp
+  #       target: 80
+  #       published: 8881
+  #   environment:
+  #     NGINX_PORT: 80
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   networks:
+  #     - api-network
+  #   depends_on:
+  #     - pod1
+  #     - pod2
+  # pod1:
+  #   hostname: pod1
+  #   container_name: pod1
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile
+  #   image: pod1
+  #   volumes:
+  #     - ./api:/app
+  #   networks:
+  #     - api-network
+  #   env_file:
+  #     - ./api/.env
 
-  pod2:
-    hostname: pod2
-    container_name: pod2
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    image: pod2
-    volumes:
-      - ./api:/app
-    networks:
-      - api-network
-    env_file:
-      - ./api/.env
+  # pod2:
+  #   hostname: pod2
+  #   container_name: pod2
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile
+  #   image: pod2
+  #   volumes:
+  #     - ./api:/app
+  #   networks:
+  #     - api-network
+  #   env_file:
+  #     - ./api/.env
 
-  pod3:
-    hostname: pod3
-    container_name: pod3
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    image: pod3
-    volumes:
-      - ./api:/app
-    networks:
-      - api-network
-    env_file:
-      - ./api/.env
+  # pod3:
+  #   hostname: pod3
+  #   container_name: pod3
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile
+  #   image: pod3
+  #   volumes:
+  #     - ./api:/app
+  #   networks:
+  #     - api-network
+  #   env_file:
+  #     - ./api/.env
 
-  redis-cache:
-    image: redis:alpine
-    hostname: redis-cache
-    container_name: redis-cache
-    restart: on-failure
-    ports:
-      - '6379:6379'
-    command: redis-server
-    volumes:
-      - cache:/data
-    networks:
-      - api-network
-  redisinsight:
-    image: redislabs/redisinsight:latest
-    ports:
-      - '8001:8001'
-    networks:
-      - api-network
+  # redis-cache:
+  #   image: redis:alpine
+  #   hostname: redis-cache
+  #   container_name: redis-cache
+  #   restart: on-failure
+  #   ports:
+  #     - '6379:6379'
+  #   command: redis-server
+  #   volumes:
+  #     - cache:/data
+  #   networks:
+  #     - api-network
+  # redisinsight:
+  #   image: redislabs/redisinsight:latest
+  #   ports:
+  #     - '8001:8001'
+  #   networks:
+  #     - api-network
 
-volumes:
-  cache:
-    driver: local
+# volumes:
+#   cache:
+#     driver: local
 
 networks:
   api-network:
