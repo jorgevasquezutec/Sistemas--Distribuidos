@@ -104,6 +104,12 @@ async def get_task_status(task_id: str)-> dict:
 
 mcontador = 0
 
+# Simple API
+@app.get("/janime")
+def get_api_anima(title:str):
+    return get_anime_info(title)
+
+# Circuit Breaker API
 @app.get("/anime")
 def implement_circuit_breaker(title: str,db: Session = Depends(get_db)):
     global mcontador
