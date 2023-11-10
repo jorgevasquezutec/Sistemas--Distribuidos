@@ -28,9 +28,24 @@ def get_animes_per_page(db: Session, title: str = None, page: int = 1, size: int
         "size": size
     }
 
+def get_animes(db: Session, title: str = None):
+    query = db.query(models.Anime)
+    if title:
+        query = query.filter(models.Anime.title.ilike(f'%{title}%'))
+    data = query.all()
+    data = [schemas.Anime.from_orm(anime) for anime in data]
+    return data
+
 def get_anime(db:Session, title: str):
     query = db.query(models.Anime).filter(models.Anime.title.ilike(f'{title}'))
     print(query.count())
     if query.count() > 0:
         return schemas.serialize_anime(query.first())
     return None
+
+
+def addChunkAnime(db:Session, animes: schemas.Anime):
+    db.bulk_insert_mappings(models.Anime, animes)
+    db.commit()
+    db.close()
+    # return True

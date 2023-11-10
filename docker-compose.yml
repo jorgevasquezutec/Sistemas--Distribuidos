@@ -12,6 +12,19 @@ services:
       networks:
         - api-network
       # restart: unless-stopped
+  k6:
+    image: loadimpact/k6:latest
+  #    entrypoint: /bin/sh
+  #    user: root
+    networks:
+      - api-network
+    ports:
+      - "6565:6565"
+    # environment:
+      # - K6_OUT=json=/scripts/results.json
+    volumes:
+      - ./scripts:/scripts
+
   # api_gateway:
   #   hostname: api_gateway
   #   image: nginx_gateway_image:latest
