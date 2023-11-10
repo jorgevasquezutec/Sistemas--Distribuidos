@@ -24,7 +24,7 @@ class AnimeExeption(Exception):
 
 
 class MyCircuitBreaker(circuitbreaker.CircuitBreaker):
-    FAILURE_THRESHOLD = 5
+    FAILURE_THRESHOLD = 20
     RECOVERY_TIMEOUT = 60
     EXPECTED_EXCEPTION = AnimeExeption
 
@@ -88,6 +88,8 @@ def get_anime_info(title: str):
 
 @MyCircuitBreaker()
 def get_anime_info_cc(title: str):
+    #print current failer count
+    # print(f"Failure count: {get_anime_info_cc._fail_counter}")
     return get_anime_info(title)
 
 @celery.task
@@ -100,31 +102,37 @@ def error_handler(request, exc, traceback):
 async def get_task_status(task_id: str)-> dict:
     return get_task_info(task_id)
 
+mcontador = 0
+
 @app.get("/anime")
 def implement_circuit_breaker(title: str,db: Session = Depends(get_db)):
+    global mcontador
     notInDb = False
     try:
         data = crud.get_animes(db,title)
+        # print(data)
         if(len(data) == 0):
             notInDb = True
+            # print("not in db")
             data = get_anime_info_cc(title)
-        return JSONResponse({
-            "status_code": 200,
-            "success": True,
-            "message": "Success get data", 
-            "data": data
-        })
+            return data
+        return data
     except circuitbreaker.CircuitBreakerError as e:
+        mcontador=0
         if(notInDb):
+            # if(not exist_pending_task_with_title(title)):
+                # si ya existe una tarea programa con title ya no lo creas.
             task = insert_anime_task.apply_async(
                 args=[title],
                 link_error=error_handler.s(),
                 countdown= 60)
             message = f"Circuit breaker active: {e} with task id {task.id}"
-            return HTTPException(status_code=503, detail=message)                                                 
-        return HTTPException(status_code=503,f"Circuit breaker active: {e}")
+            raise HTTPException(status_code=503, detail=message)                                      
+        raise HTTPException(status_code=503,detail=f"Circuit breaker active: {e}")
     except AnimeExeption as e:
-        return HTTPException(status_code=503, detail=str(e))
+        mcontador = mcontador + 1
+        print(f"Cantidad de errors {mcontador}")
+        raise HTTPException(status_code=503, detail=f'Oops! Rate limit Jikan.')
     
 
 def run():

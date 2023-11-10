@@ -30,3 +30,18 @@ def get_task_info(task_id):
         "task_result": task_result.result
     }
     return result
+
+def exist_pending_task_with_title(title):
+    """
+    return task info for the given task_id
+    """
+    active_task = current_celery_app.control.inspect().active()
+    print(active_task)
+    filterd_task = []
+    for key in active_task:
+        for task in active_task[key]:
+            if task['args'][0] == title:
+                filterd_task.append(task)
+    # print
+    return len(filterd_task) > 0
+
