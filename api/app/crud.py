@@ -1,4 +1,5 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import  Session
+from sqlalchemy.dialects.sqlite import insert
 from app import models, schemas
 
 
@@ -44,8 +45,19 @@ def get_anime(db:Session, title: str):
     return None
 
 
-def addChunkAnime(db:Session, animes: schemas.Anime):
-    db.bulk_insert_mappings(models.Anime, animes)
+def addChunkAnime(db:Session, animes: list[schemas.Anime]):
+
+    values = [anime.dict() for anime in animes]
+      # Insertar o actualizar en lotes
+    db.execute(
+        insert(models.Anime)
+        .values(values)
+        .on_conflict_do_update(
+            index_elements=['id'],
+            set_={'title': insert(models.Anime).excluded.title, 'url': insert(models.Anime).excluded.url}
+        )
+    )
+
     db.commit()
     db.close()
     # return True
