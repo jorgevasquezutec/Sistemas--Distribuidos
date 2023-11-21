@@ -6,7 +6,7 @@ export let options = {
     iterations: 50, // Número total de solicitudes a realizar
     // duration: '1m', // Duración de la prueba
 };
-const titles = ['trigun', 'monster', 'naruto', 'zipang', 'sunabouzu', 'akira', 'avenger', 'beck', 'chobits'];
+const titles = ['trigun', 'monster', 'naruto', 'zipang'];
 // const titles = ['naruto']
 
 export default function () {

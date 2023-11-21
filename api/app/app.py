@@ -135,7 +135,7 @@ def implement_circuit_breaker(title: str,db: Session = Depends(get_db)):
         raise HTTPException(status_code=503,detail=f"Circuit breaker active: {e}")
     except AnimeExeption as e:
         mcontador = mcontador + 1
-        print(f"Cantidad de errors {mcontador}")
+        # print(f"Cantidad de errors {mcontador}")
         raise HTTPException(status_code=503, detail=f'Oops! Rate limit Jikan.')
     
 
