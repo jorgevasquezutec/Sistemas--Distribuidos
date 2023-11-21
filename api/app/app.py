@@ -10,7 +10,7 @@ import json
 # from fastapi import BackgroundTasks
 import circuitbreaker
 import requests
-from app.config.celery_utils import create_celery,get_task_info
+from app.config.celery_utils import create_celery,get_task_info,exist_pending_task_with_title
 from celery import shared_task
 from fastapi.responses import JSONResponse
 
@@ -24,7 +24,7 @@ class AnimeExeption(Exception):
 
 
 class MyCircuitBreaker(circuitbreaker.CircuitBreaker):
-    FAILURE_THRESHOLD = 20
+    FAILURE_THRESHOLD = 5
     RECOVERY_TIMEOUT = 60
     EXPECTED_EXCEPTION = AnimeExeption
 
@@ -126,12 +126,10 @@ def implement_circuit_breaker(title: str,db: Session = Depends(get_db)):
     except circuitbreaker.CircuitBreakerError as e:
         mcontador=0
         if(notInDb):
-            # if(not exist_pending_task_with_title(title)):
-                # si ya existe una tarea programa con title ya no lo creas.
             task = insert_anime_task.apply_async(
-                args=[title],
-                link_error=error_handler.s(),
-                countdown= 60)
+                    args=[title],
+                    link_error=error_handler.s(),
+                    countdown= 60)
             message = f"Circuit breaker active: {e} with task id {task.id}"
             raise HTTPException(status_code=503, detail=message)                                      
         raise HTTPException(status_code=503,detail=f"Circuit breaker active: {e}")

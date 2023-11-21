@@ -15,13 +15,14 @@ services:
   k6:
     image: loadimpact/k6:latest
   #    entrypoint: /bin/sh
-  #    user: root
+    user: root
+    # working_dir: /scripts
     networks:
       - api-network
     ports:
       - "6565:6565"
     # environment:
-      # - K6_OUT=json=/scripts/results.json
+    #   - K6_OUT=json=/scripts/results.json
     volumes:
       - ./scripts:/scripts
 
